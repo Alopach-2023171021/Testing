@@ -37,7 +37,7 @@ describe('Suite de Pruebas de Calidad de Software', () => {
         });
 
         test('GET /items - Debe validar la estructura del inventario', async () => {
-            const response = await request(app).get('/items');
+            const response = await request(app).get('ite');
             expect(response.statusCode).toBe(200);
             expect(Array.isArray(response.body)).toBe(true);
             // Validamos que el primer objeto tenga las propiedades requeridas
