@@ -1,0 +1,57 @@
+# .github/workflows/k6.yml
+# Pipeline de Pruebas de Carga con K6 + Grafana Cloud
+# Alondra Itzel Pacheco de Jesus - 2023171021
+
+name: k6 load tests
+
+on:
+  push:
+    branches:
+      - k6-pipeline
+  pull_request:
+    branches:
+      - k6-pipeline
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Descargar el código del repositorio
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # 2. Configurar Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # 3. Instalar dependencias del proyecto
+      - name: Install dependencies
+        run: npm install
+
+      # 4. Iniciar la API en segundo plano y esperar que levante
+      - name: Start API
+        run: |
+          npm start &
+          sleep 10
+
+      # 5. Instalar K6
+      - name: Install k6
+        run: |
+          sudo gpg --no-default-keyring \
+            --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+            --keyserver hkp://keyserver.ubuntu.com:80 \
+            --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+            | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+
+      # 6. Ejecutar pruebas K6 y enviar resultados a Grafana Cloud
+      - name: Run k6 load tests
+        env:
+          K6_CLOUD_TOKEN: ${{ secrets.GRAFANA_API_KEY }}
+          K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
+        run: k6 run --out cloud k6-test.js
